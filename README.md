@@ -6,7 +6,7 @@ for model training, while the model training and evaluation file converts the
 preprocessed data into a matrix format suitable for training a LightGBM model and 
 evaluates the performance of the trained model.
 
-##Files
+## Files
 1. `freq_main_processing.py`: This file contains the code for processing the raw 
 data. It performs tasks such as data cleaning, feature engineering, and data 
 transformation to prepare the data for model training.
