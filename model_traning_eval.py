@@ -47,7 +47,7 @@ def matrix_build(shot_list, file_repo, tags):
 # inference on shot
 
 
-def get_shot_result(y_red, threshold_sample):
+def get_shot_result(y_red, threshold_sample,start_time):
     """
     get shot result by a threshold
     Args:
@@ -60,7 +60,7 @@ def get_shot_result(y_red, threshold_sample):
     binary_result = 1 * (y_pred >= threshold_sample)
     for k in range(len(binary_result) - 2):
         if np.sum(binary_result[k:k + 3]) == 3:
-            predicted_dis_time = (k + 2) / 1000
+            predicted_dis_time = (k + 2) / 1000 + start_time
             predicted_dis = 1
             break
         else:
@@ -136,8 +136,9 @@ if __name__ == '__main__':
             y_pred)  # save sample results to a dict
 
         # using the sample reulst to predict disruption on shot, and save result to result file using result module.
+        start_time = test_file_repo.read_labels(shot, ['StartTime'])
         predicted_disruption, predicted_disruption_time = get_shot_result(
-            y_pred, .5)  # get shot result by a threshold
+            y_pred, .5,start_time)  # get shot result by a threshold
         shots_pred_disrurption.append(predicted_disruption)
         shots_pred_disruption_time.append(predicted_disruption_time)
 
