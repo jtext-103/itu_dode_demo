@@ -61,13 +61,13 @@ if __name__ == '__main__':
             valid_shots.append(shot)
     valid_shotset = ShotSet(train_file_repo, valid_shots)
     temp_shotset = valid_shotset.process(processor=ResamplingProcessor(1000),
-                                              input_tags=['rotating_mode_proxy'],
-                                              output_tags=['rotating_mode_proxy'],
-                                              save_repo=tag_file_repo)
+                                         input_tags=['rotating_mode_proxy'],
+                                         output_tags=['rotating_mode_proxy'],
+                                         save_repo=tag_file_repo)
 
     # 4. remove mirnov
     processed_shotset = temp_shotset.remove_signal(tags=keep_tags, keep=True,
-                                                        save_repo=tag_file_repo)
+                                                   save_repo=tag_file_repo)
 
     # 5. trim  signal
     all_tags = list(processed_shotset.get_shot(shot_list[0]).tags)

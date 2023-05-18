@@ -1,16 +1,12 @@
 # @Time : 2023/5/11 22:29 
 # @Author : zhongyu 
 # @File : freq_main_processing.py
-from MDSplus import connection
 import numpy as np
 from jddb.file_repo import FileRepo
 from jddb.processor import ShotSet
-from util.basic_processor import SliceProcessor, FFTProcessor, RadiatedFraction, find_tags,AlarmTag
-from sklearn.model_selection import train_test_split
-from scipy import interpolate
-import matplotlib.pyplot as plt
+from util.basic_processor import SliceProcessor, FFTProcessor, RadiatedFraction, find_tags, AlarmTag
+from util.rotating_mode_std_processor import RotatingModeStd
 from jddb.processor.basic_processors import ResamplingProcessor, NormalizationProcessor, ClipProcessor, TrimProcessor
-from util.ip_error_process import IpError
 import warnings
 
 Mir = [
@@ -43,52 +39,86 @@ process_tag = ['ne_nG', 'qa_proxy', 'n=1 amplitude', 'P_in', 'P_rad', 'ip_error'
 if __name__ == '__main__':
     source_file_repo = FileRepo('..//FileRepo//processed_zy//$shot_2$00//')
     train_file_repo = FileRepo('..//FileRepo//train_file//$shot_2$00//')
-    # create a shot set with a file
+    # create a valid shot set with a file, the valid shots should contain target tags and enough flattop time.
     source_shotset = ShotSet(source_file_repo)
-    processed_shotset = source_shotset.process(processor=RadiatedFraction(),
-                                               input_tags=[["P_rad", "P_in"]],
-                                               output_tags=['radiated_fraction'],
-                                               save_repo=train_file_repo)
+    shot_list = source_shotset.shot_list
+    targ_tags = process_tag + sxr_core + density + basic + Mir
+    valid_shots = []
+    for shot in shot_list:
+        all_tags = list(source_shotset.get_shot(shot).tags)
+        last_time = list(train_file_repo.read_labels(shot, ['DownTime']).values())
+        if all(tag in all_tags for tag in targ_tags) & (last_time[0] > 0.2):
+            valid_shots.append(shot)
+    valid_shotset = ShotSet(train_file_repo, valid_shots)
+
+    # 1. radiated fraction
+    processed_shotset = valid_shotset.process(
+        processor=RadiatedFraction(),
+        input_tags=[["P_rad", "P_in"]],
+        output_tags=['radiated_fraction'],
+        save_repo=train_file_repo)
+
+    # 2. FFT processing for max frequency and amplitude
     for tag_index in range(len(Mir)):
         # %%
-        # 1.slicing
+        # slicing
         processed_shotset = processed_shotset.process(
             processor=SliceProcessor(window_length=2500, overlap=0.9),
             input_tags=[Mir[tag_index]],
-            output_tags=["sliced_MA_{}".format(tag_index)], save_repo=train_file_repo)
+            output_tags=["sliced_MA_{}".format(tag_index)],
+            save_repo=train_file_repo)
         # %%
-        # 2. fft MA
+        # fft MA
         processed_shotset = processed_shotset.process(
             processor=FFTProcessor(),
             input_tags=["sliced_MA_{}".format(tag_index)],
             output_tags=[["fft_amp_{}".format(tag_index), "fft_fre_{}".format(tag_index)]],
             save_repo=train_file_repo)
 
-    # 3. resample
+    # 3. rotating mode proxy
+    processed_shotset = processed_shotset.process(
+        processor=ResamplingProcessor(50000),
+        input_tags=['bt'],
+        output_tags=['bt_high'],
+        save_repo=train_file_repo)
+    processed_shotset = processed_shotset.process(
+        TrimProcessor(),
+        input_tags=[Mir[2:] + ['bt_high']],
+        output_tags=[Mir[2:] + ['bt_high']],
+        save_repo=train_file_repo)
+    processed_shotset = processed_shotset.process(
+        processor=RotatingModeStd(),
+        input_tags=[Mir[2:] + ['bt_high']],
+        output_tags=['rotating_mode_proxy'],
+        save_repo=train_file_repo)
+
+    # 4. remove redundant tags
     shot_list = processed_shotset.shot_list
     all_tags = list(processed_shotset.get_shot(shot_list[0]).tags)
     fft_tag = find_tags('fft_', all_tags)
-    sliced_tag = find_tags('sliced_', all_tags)
-    down_tags = fft_tag + sxr_core + density
-    processed_shotset = processed_shotset.process(processor=ResamplingProcessor(1000),
-                                                  input_tags=down_tags,
-                                                  output_tags=down_tags,
-                                                  save_repo=train_file_repo)
-
-    # 4. remove mirnov
-    processed_shotset = processed_shotset.remove_signal(tags=Mir+sliced_tag+sxr,
+    keep_tags = process_tag + sxr_core + density + basic + fft_tag + ['rotating_mode_proxy', 'radiated_fraction']
+    processed_shotset = processed_shotset.remove_signal(tags=keep_tags, keep=True,
                                                         save_repo=train_file_repo)
 
-    # 5. trim  signal
-    all_tags = list(processed_shotset.get_shot(shot_list[0]).tags)
-    processed_shotset = processed_shotset.process(TrimProcessor(),
-                                                  input_tags=[all_tags],
-                                                  output_tags=[all_tags],
-                                                  save_repo=train_file_repo)
-
-    # 6. add disruption labels for each time point as a signal called alarm_tag
+    # 5. resample high frequency tags
+    down_tags = fft_tag + sxr_core + density+['rotating_mode_proxy']
     processed_shotset = processed_shotset.process(
-        processor=AlarmTag(
-            lead_time=0.1, disruption_label="IsDisrupt", downtime_label="DownTime"),
-        input_tags=["ip"], output_tags=["alarm_tag"],
+        processor=ResamplingProcessor(1000),
+        input_tags=down_tags,
+        output_tags=down_tags,
+        save_repo=train_file_repo)
+
+    # 6. trim  signal
+    all_tags = list(processed_shotset.get_shot(shot_list[0]).tags)
+    processed_shotset = processed_shotset.process(
+        TrimProcessor(),
+        input_tags=[all_tags],
+        output_tags=[all_tags],
+        save_repo=train_file_repo)
+
+    # 7. add disruption labels for each time point as a signal called alarm_tag
+    processed_shotset = processed_shotset.process(
+        processor=AlarmTag(lead_time=0.1, disruption_label="IsDisrupt", downtime_label="DownTime"),
+        input_tags=["ip"],
+        output_tags=["alarm_tag"],
         save_repo=train_file_repo)

@@ -27,10 +27,11 @@ if __name__ == '__main__':
         input_tags=['bt'],
         output_tags=['bt_high'],
         save_repo=upload_file_repo)
-    processed_shotset = processed_shotset.process(TrimProcessor(),
-                                                  input_tags=[Mir[2:] + ['bt_high']],
-                                                  output_tags=[Mir[2:] + ['bt_high']],
-                                                  save_repo=upload_file_repo)
+    processed_shotset = processed_shotset.process(
+        TrimProcessor(),
+        input_tags=[Mir[2:] + ['bt_high']],
+        output_tags=[Mir[2:] + ['bt_high']],
+        save_repo=upload_file_repo)
     processed_shotset = processed_shotset.process(
         processor=RotatingModeStd(),
         input_tags=[Mir[2:] + ['bt_high']],
