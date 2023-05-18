@@ -1,0 +1,10 @@
+exclude_files_from_push:
+  script:
+    - git rm --cached simple_processing.py
+    - git rm --cached continue_processing.py
+    - git rm --cached file_change.py
+    - git rm --cached ip_set_construct.py
+    - git rm --cached itu_data_handling.py
+    - git rm --cached rotating_processing.py
+  except:
+    - master
