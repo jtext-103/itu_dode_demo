@@ -7,6 +7,11 @@ from copy import deepcopy
 
 
 class IpError(BaseProcessor):
+    """
+            Given the ip target signal and ip
+            signal to calculate the ip error.
+
+    """
 
     def __init__(self, ):
         super().__init__()
@@ -16,7 +21,7 @@ class IpError(BaseProcessor):
 
         :param ip_target_signal:
         :param ip_signal:
-        :return:
+        :return:Signal, ip error
         """
         resampled_attributes = deepcopy(ip_signal.attributes)
         new_data = (ip_signal.data - ip_target_signal.data) / ip_signal.data

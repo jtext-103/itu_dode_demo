@@ -177,7 +177,11 @@ class AlarmTag(BaseProcessor):
 
 
 class RadiatedFraction(BaseProcessor):
+    """
+            Given the radiated power signal and input power
+            signal to calculate the radiated fraction.
 
+    """
     def __init__(self, ):
         super().__init__()
 
