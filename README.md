@@ -16,6 +16,10 @@ using the preprocessed data. It converts the data into a matrix format that can 
 consumed by the LightGBM library. Additionally, it evaluates the performance of 
 the trained model using suitable metrics.
 
+## Folder 
+1. `util`: this folder contains the processors which are used in
+'freq_main_processing.py'
+
 ## Usage
 1. Run the `freq_main_processing.py` script to preprocess the raw data. Make sure
 to provide the necessary input data files or modify the code to fetch the data 
