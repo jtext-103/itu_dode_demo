@@ -30,6 +30,18 @@ suitable for the model training and evaluation step.
 Ensure that the processed data files are accessible by the script. The script 
 will train a LightGBM model using the processed data and output the evaluation 
 results, such as accuracy, precision, recall, or any other relevant metrics.
+## Evaluation
+### Confusion Matrix
+![Confusion Matrix](eval_fig/confusion_matrix.png)
+
+### ROC Curve
+![ROC Curve](eval_fig/roc.png)
+
+### Histogram Warning Time
+![Histogram Warning Time](eval_fig/histogram_warning_time.png)
+
+### Accumulate Warning Time
+![Accumulate Warning Time](eval_fig/accumulate_warning_time.png)
 
 ## Requirements
 - JDDB

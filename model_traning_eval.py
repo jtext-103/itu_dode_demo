@@ -47,14 +47,16 @@ def matrix_build(shot_list, file_repo, tags):
 # inference on shot
 
 
-def get_shot_result(y_red, threshold_sample,start_time):
+def get_shot_result(y_red, threshold_sample, start_time):
     """
-    get shot result by a threshold
+    get shot result by a threshold and compare to start time
     Args:
         y_red: sample result from model
         threshold_sample: disruptive predict level
 
-    Returns: shot predict result and predict time
+    Returns:
+        shot predict result:The prediction result for the shot
+        predict time: The time when disruption prediction is made or -1 for no disruption shot
 
     """
     binary_result = 1 * (y_pred >= threshold_sample)
@@ -77,6 +79,7 @@ if __name__ == '__main__':
     test_shot_list = test_file_repo.get_all_shots()
     print(len(test_shot_list))
     tag_list = test_file_repo.get_tag_list(test_shot_list[0])
+    # disruption tag for dataset split
     is_disrupt = []
     for shot in test_shot_list:
         dis_label = test_file_repo.read_labels(shot, ['IsDisrupt'])
@@ -136,9 +139,9 @@ if __name__ == '__main__':
             y_pred)  # save sample results to a dict
 
         # using the sample reulst to predict disruption on shot, and save result to result file using result module.
-        start_time = test_file_repo.read_labels(shot, ['StartTime'])
+        time_dict = test_file_repo.read_labels(shot, ['StartTime'])
         predicted_disruption, predicted_disruption_time = get_shot_result(
-            y_pred, .5,start_time)  # get shot result by a threshold
+            y_pred, .5, time_dict['StartTime'])  # get shot result by a threshold
         shots_pred_disrurption.append(predicted_disruption)
         shots_pred_disruption_time.append(predicted_disruption_time)
 
@@ -156,7 +159,8 @@ if __name__ == '__main__':
     print("precision = " + str(test_result.precision))
     print("tpr = " + str(test_result.tpr))
 
-    # %% plot some of the result
+    # %% plot some of the result: confusion matrix, warning time histogram
+    # and accumulate warning time.
     sns.heatmap(test_result.confusion_matrix, annot=True, cmap="Blues", fmt='.0f')
     plt.xlabel("Predicted labels")
     plt.ylabel("True labels")
@@ -179,8 +183,9 @@ if __name__ == '__main__':
         shots_pred_disruption_time = []
         for shot in test_shots:
             y_pred = sample_result[shot][0]
+            time_dict = test_file_repo.read_labels(shot, ['StartTime'])
             predicted_disruption, predicted_disruption_time = get_shot_result(
-                y_pred, threshold)
+                y_pred, threshold, time_dict['StartTime'])
             shots_pred_disrurption.append(predicted_disruption)
             shots_pred_disruption_time.append(predicted_disruption_time)
         # i dont save so the file never get created
@@ -192,7 +197,7 @@ if __name__ == '__main__':
         temp_test_result.get_all_truth_from_file_repo(test_file_repo)
 
         # add result to the report
-        test_report.add(temp_test_result, "thr="+str(threshold))
+        test_report.add(temp_test_result, "thr=" + str(threshold))
         test_report.save()
     # plot all metrics with roc
     test_report.plot_roc('../_temp_test/')

@@ -42,14 +42,16 @@ if __name__ == '__main__':
     # create a valid shot set with a file, the valid shots should contain target tags and enough flattop time.
     source_shotset = ShotSet(source_file_repo)
     shot_list = source_shotset.shot_list
+    # Define the target tags which contain signals for process
     targ_tags = process_tag + sxr_core + density + basic + Mir
-    valid_shots = []
+    valid_shots = []  # Initialize an empty list to store valid shots
     for shot in shot_list:
         all_tags = list(source_shotset.get_shot(shot).tags)
-        last_time = list(train_file_repo.read_labels(shot, ['DownTime']).values())
+        last_time = list(source_file_repo.read_labels(shot, ['DownTime']).values())
+        # Check if all target tags are present in the shot's tags and last_time of shot is greater than 0.2s
         if all(tag in all_tags for tag in targ_tags) & (last_time[0] > 0.2):
             valid_shots.append(shot)
-    valid_shotset = ShotSet(train_file_repo, valid_shots)
+    valid_shotset = ShotSet(source_file_repo, valid_shots)  # Create a new ShotSet object using the valid shots
 
     # 1. radiated fraction
     processed_shotset = valid_shotset.process(
@@ -57,8 +59,9 @@ if __name__ == '__main__':
         input_tags=[["P_rad", "P_in"]],
         output_tags=['radiated_fraction'],
         save_repo=train_file_repo)
+    print(len(processed_shotset.shot_list))
 
-    # 2. FFT processing for max frequency and amplitude
+    # 2. FFT processing for max frequency and amplitude of mirnov signals
     for tag_index in range(len(Mir)):
         # %%
         # slicing
@@ -86,22 +89,22 @@ if __name__ == '__main__':
         input_tags=[Mir[2:] + ['bt_high']],
         output_tags=[Mir[2:] + ['bt_high']],
         save_repo=train_file_repo)
-    processed_shotset = processed_shotset.process(
+    temp_shotset = processed_shotset.process(
         processor=RotatingModeStd(),
         input_tags=[Mir[2:] + ['bt_high']],
         output_tags=['rotating_mode_proxy'],
         save_repo=train_file_repo)
 
-    # 4. remove redundant tags
+    # 4. remove redundant tags and keep tags for model training
     shot_list = processed_shotset.shot_list
     all_tags = list(processed_shotset.get_shot(shot_list[0]).tags)
-    fft_tag = find_tags('fft_', all_tags)
+    fft_tag = find_tags('fft_', all_tags)  # tags coming from process should be included like fft and so on.
     keep_tags = process_tag + sxr_core + density + basic + fft_tag + ['rotating_mode_proxy', 'radiated_fraction']
-    processed_shotset = processed_shotset.remove_signal(tags=keep_tags, keep=True,
+    processed_shotset = temp_shotset.remove_signal(tags=keep_tags, keep=True,
                                                         save_repo=train_file_repo)
 
     # 5. resample high frequency tags
-    down_tags = fft_tag + sxr_core + density+['rotating_mode_proxy']
+    down_tags = fft_tag + sxr_core + density + ['rotating_mode_proxy']
     processed_shotset = processed_shotset.process(
         processor=ResamplingProcessor(1000),
         input_tags=down_tags,
