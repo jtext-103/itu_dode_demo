@@ -207,3 +207,18 @@ def find_tags(prefix, all_tags):
     :return: matching tags as a list[sting]
     """
     return list(filter(lambda tag: tag.encode("utf-8").decode("utf-8", "ignore")[0:len(prefix)] == prefix, all_tags))
+
+def get_machine_tags(machine_name,name_list,df_signal):
+    """
+    get machine tags' name by common name list name_list from the signal dataframe df_signal
+    :param machine_name: The machine name like 'J-TEXT'
+    :param name_list: common name list for 3 machine
+    :param df_signal: signal data frame which contain machine tags' name
+    :return: target tags list of machine
+    """
+    machine_tags = []
+    for signal_name in name_list:
+        target_row = df_signal.loc[df_signal.Diagnostics == signal_name]
+        signal_tag = target_row['{} MDSplus Tag'.format(machine_name)].values[0]
+        machine_tags.append(signal_tag)
+    return machine_tags

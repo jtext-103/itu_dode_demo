@@ -7,5 +7,6 @@ exclude_files_from_push:
     - git rm --cached itu_data_handling.py
     - git rm --cached rotating_processing.py
     - git rm --cached invalid_hd5_test.py
+    - git rm --cached Documentation.ipynb
   except:
     - master

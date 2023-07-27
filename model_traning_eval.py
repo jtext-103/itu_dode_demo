@@ -71,11 +71,11 @@ def get_shot_result(y_red, threshold_sample, start_time):
     return predicted_dis, predicted_dis_time
 
 
-# %% init FileRepo
+
 if __name__ == '__main__':
 
     test_file_repo = FileRepo(
-        "..//FileRepo//tag_file//$shot_2$00//")
+        "..//FileRepo//train_file//$shot_2$00//")
     test_shot_list = test_file_repo.get_all_shots()
     print(len(test_shot_list))
     tag_list = test_file_repo.get_tag_list(test_shot_list[0])
@@ -119,7 +119,7 @@ if __name__ == '__main__':
                     evals_result=evals_result,
                     early_stopping_rounds=30)
 
-    # %% generate result and evaluate
+    #%% generate result and evaluate
     # save sample result to a dict, so when predicting shot with differnet trgging logic,
     # you don't have to re-infor the testshot
 
