@@ -26,7 +26,7 @@ evaluates the performance of the trained model.
 
 ## Usage
 
-**NOTE:The 2 ipython not books are more readable.**
+**NOTE: The 2 ipython notebooks are more readable.**
 
 1. Run the `freq_main_processing.py` script to preprocess the raw data. Make sure
    to provide the necessary input data files or modify the code to fetch the data
