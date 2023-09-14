@@ -11,6 +11,7 @@ import lightgbm as lgb
 import pandas as pd
 import os
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
 from jddb.performance import Result
 from jddb.performance import Report
 from jddb.file_repo import FileRepo
@@ -47,28 +48,25 @@ def matrix_build(shot_list, file_repo, tags):
 # inference on shot
 
 
-def get_shot_result(y_red, threshold_sample, start_time):
+def get_shot_result(y_pred, threshold_sample):
     """
     get shot result by a threshold and compare to start time
     Args:
-        y_red: sample result from model
+        y_pred: sample result from model
         threshold_sample: disruptive predict level
 
     Returns:
         shot predict result:The prediction result for the shot
-        predict time: The time when disruption prediction is made or -1 for no disruption shot
 
     """
     binary_result = 1 * (y_pred >= threshold_sample)
     for k in range(len(binary_result) - 2):
         if np.sum(binary_result[k:k + 3]) == 3:
-            predicted_dis_time = (k + 2) / 1000 + start_time
             predicted_dis = 1
             break
         else:
-            predicted_dis_time = -1
             predicted_dis = 0
-    return predicted_dis, predicted_dis_time
+    return predicted_dis
 
 
 
@@ -120,84 +118,35 @@ if __name__ == '__main__':
                     early_stopping_rounds=30)
 
     #%% generate result and evaluate
-    # save sample result to a dict, so when predicting shot with differnet trgging logic,
-    # you don't have to re-infor the testshot
-
-    # create an empty result object
-    test_result = Result(r'..\_temp_test\test_result.csv')
-    sample_result = dict()
-
     # generate predictions for each shot
     shot_nos = test_shots  # shot list
     shots_pred_disrurption = []  # shot predict result
+    shots_true_disruption = [ ]  # shot true disruption label
     shots_pred_disruption_time = []  # shot predict time
     for shot in test_shots:
+        true_disruption = 0 if test_file_repo.read_labels(shot)["IsDisrupt"] == False else 1
+        shots_true_disruption.append(true_disruption)
+
         X, _ = matrix_build([shot], test_file_repo, tag_list)
         # get sample result from LightGBM
         y_pred = gbm.predict(X, num_iteration=gbm.best_iteration)
-        sample_result.setdefault(shot, []).append(
-            y_pred)  # save sample results to a dict
 
-        # using the sample reulst to predict disruption on shot, and save result to result file using result module.
-        time_dict = test_file_repo.read_labels(shot, ['StartTime'])
-        predicted_disruption, predicted_disruption_time = get_shot_result(
-            y_pred, .5, time_dict['StartTime'])  # get shot result by a threshold
+        # using the sample reulst to predict disruption on shot
+        predicted_disruption = get_shot_result(y_pred, .5)  # get shot result by a threshold
         shots_pred_disrurption.append(predicted_disruption)
-        shots_pred_disruption_time.append(predicted_disruption_time)
 
-    # add predictions for each shot to the result object
-    test_result.add(shot_nos, shots_pred_disrurption,
-                    shots_pred_disruption_time)
-    # get true disruption label and time
-    test_result.get_all_truth_from_file_repo(
-        test_file_repo)
+    # add predictions for each shot to the result dataframe
+    pred_result = pd.DataFrame({'Shot': shot_nos,
+                                'shot_pred': shots_pred_disrurption})
+    pred_result.to_csv('.\_temp_test\test_result.csv')
 
-    test_result.lucky_guess_threshold = .8
-    test_result.tardy_alarm_threshold = .005
-    test_result.calc_metrics()
-    test_result.save()
-    print("precision = " + str(test_result.precision))
-    print("tpr = " + str(test_result.tpr))
-
-    # %% plot some of the result: confusion matrix, warning time histogram
-    # and accumulate warning time.
-    sns.heatmap(test_result.confusion_matrix, annot=True, cmap="Blues", fmt='.0f')
+    # %% plot some of the result: confusion matrix
+    matrix = confusion_matrix(shots_true_disruption, shots_pred_disrurption)
+    sns.heatmap(matrix, annot=True, cmap="Blues", fmt='.0f')
     plt.xlabel("Predicted labels")
     plt.ylabel("True labels")
     plt.title("Confusion Matrix")
     # plt.savefig(os.path.join('..//_temp_test//', 'Confusion Matrix.png'), dpi=300)
     plt.show()
 
-    test_result.plot_warning_time_histogram(
-        [-1, .002, .01, .05, .1, .3], '..//_temp_test//')
-    test_result.plot_accumulate_warning_time('..//_temp_test//')
 
-    # %% scan the threshold for shot prediction to get
-    # many results, and add them to a report
-    # simply change different disruptivity triggering level and logic, get many result.
-    test_report = Report('..//_temp_test//report.csv')
-    thresholds = np.linspace(0, 1, 50)
-    for threshold in thresholds:
-        shot_nos = test_shots
-        shots_pred_disrurption = []
-        shots_pred_disruption_time = []
-        for shot in test_shots:
-            y_pred = sample_result[shot][0]
-            time_dict = test_file_repo.read_labels(shot, ['StartTime'])
-            predicted_disruption, predicted_disruption_time = get_shot_result(
-                y_pred, threshold, time_dict['StartTime'])
-            shots_pred_disrurption.append(predicted_disruption)
-            shots_pred_disruption_time.append(predicted_disruption_time)
-        # i dont save so the file never get created
-        temp_test_result = Result('../_temp_test/temp_result.csv')
-        temp_test_result.lucky_guess_threshold = .8
-        temp_test_result.tardy_alarm_threshold = .001
-        temp_test_result.add(shot_nos, shots_pred_disrurption,
-                             shots_pred_disruption_time)
-        temp_test_result.get_all_truth_from_file_repo(test_file_repo)
-
-        # add result to the report
-        test_report.add(temp_test_result, "thr=" + str(threshold))
-        test_report.save()
-    # plot all metrics with roc
-    test_report.plot_roc('../_temp_test/')
