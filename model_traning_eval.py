@@ -117,7 +117,7 @@ if __name__ == '__main__':
                     evals_result=evals_result,
                     early_stopping_rounds=30)
 
-    #%% generate result and evaluate
+    # %% generate result and evaluate
     # generate predictions for each shot
     shot_nos = test_shots  # shot list
     shots_pred_disrurption = []  # shot predict result
