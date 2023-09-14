@@ -138,7 +138,7 @@ if __name__ == '__main__':
     # add predictions for each shot to the result dataframe
     pred_result = pd.DataFrame({'Shot': shot_nos,
                                 'shot_pred': shots_pred_disrurption})
-    pred_result.to_csv('.\_temp_test\test_result.csv')
+    pred_result.to_csv(r'..\_temp_test\test_result.csv')
 
     # %% plot some of the result: confusion matrix
     matrix = confusion_matrix(shots_true_disruption, shots_pred_disrurption)
