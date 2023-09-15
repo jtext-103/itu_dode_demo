@@ -69,7 +69,6 @@ def get_shot_result(y_pred, threshold_sample):
     return predicted_dis
 
 
-
 if __name__ == '__main__':
 
     test_file_repo = FileRepo(
@@ -121,10 +120,11 @@ if __name__ == '__main__':
     # generate predictions for each shot
     shot_nos = test_shots  # shot list
     shots_pred_disrurption = []  # shot predict result
-    shots_true_disruption = [ ]  # shot true disruption label
+    shots_true_disruption = []  # shot true disruption label
     shots_pred_disruption_time = []  # shot predict time
     for shot in test_shots:
-        true_disruption = 0 if test_file_repo.read_labels(shot)["IsDisrupt"] == False else 1
+        true_disruption = 0 if test_file_repo.read_labels(
+            shot)["IsDisrupt"] == False else 1
         shots_true_disruption.append(true_disruption)
 
         X, _ = matrix_build([shot], test_file_repo, tag_list)
@@ -132,7 +132,8 @@ if __name__ == '__main__':
         y_pred = gbm.predict(X, num_iteration=gbm.best_iteration)
 
         # using the sample reulst to predict disruption on shot
-        predicted_disruption = get_shot_result(y_pred, .5)  # get shot result by a threshold
+        predicted_disruption = get_shot_result(
+            y_pred, .5)  # get shot result by a threshold
         shots_pred_disrurption.append(predicted_disruption)
 
     # add predictions for each shot to the result dataframe
@@ -146,7 +147,5 @@ if __name__ == '__main__':
     plt.xlabel("Predicted labels")
     plt.ylabel("True labels")
     plt.title("Confusion Matrix")
-    # plt.savefig(os.path.join('..//_temp_test//', 'Confusion Matrix.png'), dpi=300)
+    # plt.savefig(os.path.join('.//_temp_test//', 'Confusion Matrix.png'), dpi=300)
     plt.show()
-
-

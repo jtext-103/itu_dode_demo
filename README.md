@@ -26,19 +26,21 @@ The result of the shot, should be output in a csv file for Zindi platform to eva
 
 ## Example Project Description
 
-This project contains two main files: a freq_main_processing.py file and
-a model_traning_eval.py file. The processing file is used to preprocess raw data
+This project contains two main notebook files: a freq_main_processing.ipynb file and
+a model_traning_eval.ipynb file. The processing file is used to preprocess raw data
 for model training, while the model training and evaluation file converts the
 preprocessed data into a matrix format suitable for training a LightGBM model and
 evaluates the performance of the trained model.
 
+The first show you how to extract features and put the result in a FileRepo, which will be consumed by the second file. The second is very import for training a model.
+
 ## Files
 
-1. `freq_main_processing.py`: This file contains the code for processing the raw
+1. `freq_main_processing.ipynb`: This file contains the code for processing the raw
    data. It performs tasks such as data cleaning, feature engineering, and data
    transformation to prepare the data for model training.
 
-2. `model_traning_eval.py`: This file is responsible for training a LightGBM model
+2. `model_traning_eval.ipynb`: This file is responsible for training a LightGBM model
    using the preprocessed data. It converts the data into a matrix format that can be
    consumed by the LightGBM library. Additionally, it evaluates the performance of
    the trained model using suitable metrics.
