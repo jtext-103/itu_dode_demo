@@ -22,7 +22,7 @@ env/
 # Logs
 *.log
 
-*.hdf5
+
 _temp*/
 data/processed_data_1k_5k_final.zip
 data/jtext.md

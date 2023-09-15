@@ -10,6 +10,8 @@ As shown in the fig. below, each sub plot is a diagnostic measurement, the measu
 
 ![](README/2023-09-15-08-30-48.png)
 
+One last thing to note is this is a cross machine disruption challenge. It means you are expecting to train a model with data from today's tokamaks, maybe a little data from future machine, and use that model to predict disruption in future machines. So, in this challenge, you are going to use J-TEXT and HL-2A and 20 shots from C-mod as training sets. Then test you model on C-mod evaluation dataset and submit the results.
+
 **How to prepare the data and train the disruption prediction mdoel?**
 
 Fig. below is a zoomed in view of the measurement approaching disruption. The red vertical line marks the disruption. Before that in the red shaded part you can see clear precursors. So to train the model you need to label each time step as precursor -positive samples- or not -negative samples-. But precursors are subtle and manually label it is not feasible. So in practice, we just label a few ms before disruption as positive. Everything else -non-disruption shots and time long before disruption in disruption shots- is labeled negative.
